@@ -78,7 +78,12 @@ try {
   const portfolioPage = await desktop.newPage()
   await portfolioPage.goto('http://127.0.0.1:4174/', { waitUntil: 'domcontentloaded' })
   await portfolioPage.getByRole('heading', { level: 1, name: /Михаил/ }).waitFor()
-  assert.equal(await portfolioPage.locator('.project').count(), 5)
+  assert.equal(await portfolioPage.locator('.project').count(), 6)
+  const hotelProject = portfolioPage.locator('.project').filter({ has: portfolioPage.getByRole('heading', { name: 'ВиАрти', exact: true }) })
+  assert.equal(await hotelProject.locator('.project-label').textContent(), 'Коммерческий проект')
+  assert.equal(await hotelProject.getByRole('link', { name: 'Открыть сайт' }).getAttribute('href'), 'https://виарти.рф/')
+  assert.equal(await hotelProject.locator('a').count(), 1)
+  assert.ok((await hotelProject.textContent()).includes('Права на исходники принадлежат владельцу мини-отеля.'))
   for (const repository of ['sensoria', 'contour-reports', 'stream-quiz', 'VEHA']) {
     assert.equal(await portfolioPage.locator(`.project-links a[href="https://github.com/ANOWIZ/${repository}"]`).count(), 1)
   }
