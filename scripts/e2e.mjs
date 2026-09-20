@@ -78,7 +78,10 @@ try {
   const portfolioPage = await desktop.newPage()
   await portfolioPage.goto('http://127.0.0.1:4174/', { waitUntil: 'domcontentloaded' })
   await portfolioPage.getByRole('heading', { level: 1, name: /Михаил/ }).waitFor()
-  assert.equal(await portfolioPage.locator('.project').count(), 3)
+  assert.equal(await portfolioPage.locator('.project').count(), 5)
+  for (const repository of ['sensoria', 'contour-reports', 'stream-quiz']) {
+    assert.equal(await portfolioPage.locator(`.project-links a[href="https://github.com/ANOWIZ/${repository}"]`).count(), 1)
+  }
   assert.equal(await portfolioPage.locator('.hero-actions').getByRole('link', { name: 'GitHub', exact: true }).getAttribute('href'), 'https://github.com/ANOWIZ')
   assert.equal(await portfolioPage.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true)
   await portfolioPage.evaluate(() => document.fonts.ready)
