@@ -104,7 +104,7 @@ try {
           return hasText && parseFloat(getComputedStyle(el).fontSize) < 14
         }).map(el => el.textContent.slice(0, 60))
         return {
-          font: document.fonts.check('18px "Golos Text Variable"', 'Привет'),
+          font: document.fonts.check('18px "Onest Variable"', 'Привет'),
           body: getComputedStyle(document.body).fontSize,
           fits: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
           small,

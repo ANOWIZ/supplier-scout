@@ -310,16 +310,15 @@ export default function App() {
             <h1>Поставщики кофе</h1>
             <p>Сравните минимальный заказ, цены и доставку. В карточке каждой компании — контакты и ссылки на условия.</p>
           </div>
-        </section>
-
-        <section className="workspace" id="suppliers">
           <div className="search-panel">
             <label className="field category-field"><span>Что ищем</span><input value="Кофе в зернах" readOnly /></label>
             <label className="field region-field"><span>Куда</span><input value="Екатеринбург" readOnly /></label>
             <label className="field volume-field"><span>Объём в месяц</span><span className="number-input"><input type="number" min="1" max="100000" value={requestedKg} onChange={(event) => setRequestedKg(Math.max(1, Number(event.target.value) || 1))} /><b>кг</b></span></label>
             <button className="search-button" onClick={() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })}>Показать варианты <ArrowIcon /></button>
           </div>
+        </section>
 
+        <section className="workspace" id="suppliers">
           <div className="results-heading" id="results">
             <div><h2>{loading ? 'Загружаем каталог…' : `${filtered.length} поставщиков`}</h2><p className="results-hint">Выберите 2–3 компании для сравнения.</p></div>
             <label className="inline-search"><span className="sr-only">Поиск по результатам</span><input placeholder="Название, город, услуга" value={query} onChange={(event) => setQuery(event.target.value)} /><span>⌕</span></label>
