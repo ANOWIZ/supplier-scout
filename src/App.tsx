@@ -6,7 +6,7 @@ import type { Supplier, SupplierSnapshot } from './types'
 const scoreLabels: Record<string, string> = {
   product_match: 'Категория',
   delivery_region: 'Доставка',
-  minimum_fit: 'MOQ подходит',
+  minimum_fit: 'Размер заказа',
   source_reliability: 'Надёжность источника',
   freshness: 'Свежесть данных',
   price_transparency: 'Открытая цена',
@@ -16,9 +16,12 @@ function ArrowIcon() {
   return <svg viewBox="0 0 18 18" aria-hidden="true"><path d="M3 9h11M10 4l5 5-5 5" /></svg>
 }
 
-function DatabaseIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+const fieldLabels: Record<string, string> = {
+  products: 'Ассортимент', minimum_order: 'Минимальный заказ', price: 'Цена',
+  delivery: 'Доставка', delivers_to_ekaterinburg: 'Доставка в Екатеринбург',
+  contacts: 'Контакты', location: 'Город', certificates: 'Документы',
 }
+const confidenceLabels = { high: 'Указано на сайте', medium: 'Требует уточнения', low: 'Не подтверждено' }
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T00:00:00`))
@@ -73,7 +76,7 @@ function useDialogFocus<T extends HTMLElement>(onClose: () => void) {
 function downloadCsv(items: Supplier[]) {
   const protectSpreadsheetCell = (value: string) => /^[\t\r=+\-@]/.test(value) ? `'${value}` : value
   const rows = [
-    ['Поставщик', 'Город', 'MOQ', 'Цена', 'Доставка в Екатеринбург', 'Контакт', 'Источник', 'Проверено'],
+    ['Поставщик', 'Город', 'Минимальный заказ', 'Цена', 'Доставка в Екатеринбург', 'Контакт', 'Источник', 'Проверено'],
     ...items.map((item) => [
       item.name,
       item.location,
@@ -95,7 +98,7 @@ function downloadCsv(items: Supplier[]) {
 
 function createRequest(items: Supplier[], requestedKg: number) {
   const names = items.map((item) => item.name).join(', ')
-  return `Здравствуйте! Ищем поставщика кофе в зернах для HoReCa в Екатеринбурге, ориентировочный объём — ${requestedKg} кг в месяц. Рассматриваем: ${names}. Просим прислать актуальный прайс, MOQ, сроки и стоимость доставки, условия оплаты, образцы и комплект сертификатов. Спасибо!`
+  return `Здравствуйте! Ищем поставщика кофе в зернах для кафе в Екатеринбурге, ориентировочный объём — ${requestedKg} кг в месяц. Рассматриваем: ${names}. Просим прислать актуальный прайс, минимальный объём заказа, сроки и стоимость доставки, условия оплаты, образцы и комплект сертификатов. Спасибо!`
 }
 
 function ScoreDial({ value }: { value: number }) {
@@ -124,7 +127,7 @@ function SupplierRow({
           <span className="supplier-name">{supplier.name}</span>
           <span className="supplier-location">{supplier.location}</span>
         </span>
-        <span className="data-cell"><small>MOQ</small>{supplier.minimum_order.label}</span>
+        <span className="data-cell"><small>Мин. заказ</small>{supplier.minimum_order.label}</span>
         <span className="data-cell"><small>Цена</small>{supplier.price.label}</span>
         <span className="data-cell delivery-cell">
           <small>Екатеринбург</small>
@@ -157,7 +160,7 @@ function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: ()
         <p className="drawer-description">{supplier.description}</p>
 
         <div className="drawer-facts">
-          <div><small>MOQ</small><strong>{supplier.minimum_order.label}</strong></div>
+          <div><small>Минимальный заказ</small><strong>{supplier.minimum_order.label}</strong></div>
           <div><small>Цена</small><strong>{supplier.price.label}</strong></div>
           <div><small>Проверено</small><strong>{formatDate(supplier.verified_at)}</strong></div>
           <div><small>Документы</small><strong>{supplier.certificates}</strong></div>
@@ -178,13 +181,13 @@ function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: ()
         </section>
 
         <section className="drawer-section">
-          <h3>Основания</h3>
+          <h3>Что указано на сайте</h3>
           <div className="evidence-list">
             {supplier.evidence.map((item, index) => {
               const source = sourceFor(item.source_index)
               return (
                 <div className="evidence-item" key={`${item.quote}-${index}`}>
-                  <div className="evidence-meta"><span>{item.fields.join(' · ')}</span><span className={`confidence ${item.confidence}`}>{item.confidence}</span></div>
+                  <div className="evidence-meta"><span>{item.fields.map(field => fieldLabels[field] ?? field).join(' · ')}</span><span className={`confidence ${item.confidence}`}>{confidenceLabels[item.confidence]}</span></div>
                   <p>{item.quote}</p>
                   <a href={source.url} target="_blank" rel="noreferrer">{source.title} <ArrowIcon /></a>
                 </div>
@@ -219,13 +222,12 @@ function ComparePanel({ items, requestedKg, onClose, onRemove }: { items: Suppli
           <div><p className="eyebrow">Короткий список</p><h2 id="compare-title">Сравнение {items.length} поставщиков</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="Закрыть">×</button>
         </div>
-        <div className="compare-grid">
+        <div className="compare-grid" style={{ gridTemplateColumns: `140px repeat(${items.length}, minmax(240px, 1fr))` }}>
           <div className="compare-labels" aria-hidden="true">
-            <span /><span>Рейтинг</span><span>MOQ</span><span>Цена</span><span>Доставка</span><span>Контакт</span>
+            <span /><span>Оценка</span><span>Мин. заказ</span><span>Цена</span><span>Доставка</span><span>Контакт</span>
           </div>
-          {items.map((item, index) => (
+          {items.map((item) => (
             <div className="compare-column" key={item.id}>
-              {index === 0 && <span className="recommended">лучший матч</span>}
               <div className="compare-name"><h3>{item.name}</h3><button onClick={() => onRemove(item.id)} aria-label={`Убрать ${item.name}`}>×</button></div>
               <strong className="compare-score">{item.score?.total}<small>/100</small></strong>
               <span>{item.minimum_order.label}</span>
@@ -297,20 +299,16 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <a className="brand" href="#top"><span>SS</span> Supplier Scout</a>
-        <nav aria-label="Основная навигация"><a href="#suppliers">Поставщики</a><a href="#method">Методика</a></nav>
-        <span className={`data-status ${mode}`}><i />{mode === 'api' ? 'API онлайн' : 'Снимок данных'}</span>
+        <nav aria-label="Основная навигация"><a href="#suppliers">Каталог</a><a href="#method">О данных</a></nav>
+        <span className={`data-status ${mode}`}><i />{meta ? `Проверено ${formatDate(meta.verified_at)}` : 'Загрузка каталога'}</span>
       </header>
 
       <main id="top">
         <section className="intro">
           <div className="intro-copy">
-            <p className="eyebrow">Закупки · HoReCa · Россия</p>
-            <h1>Найдите поставщика.<br /><em>Проверьте основания.</em></h1>
-            <p>Рабочий прототип поиска и сравнения поставщиков — без скрытых критериев и выдуманных данных.</p>
-          </div>
-          <div className="intro-signal" aria-hidden="true">
-            <span className="signal-ring ring-one" /><span className="signal-ring ring-two" /><span className="signal-ring ring-three" />
-            <div className="signal-core"><DatabaseIcon /><small>10</small><span>источников</span></div>
+            <p className="eyebrow">Кофе для кафе и ресторанов · Екатеринбург</p>
+            <h1>Поставщики кофе</h1>
+            <p>Сравните минимальный заказ, цены и доставку. В карточке каждой компании — контакты и ссылки на условия.</p>
           </div>
         </section>
 
@@ -323,18 +321,18 @@ export default function App() {
           </div>
 
           <div className="results-heading" id="results">
-            <div><p className="eyebrow">Результаты</p><h2>{loading ? 'Сверяем данные…' : `${filtered.length} поставщиков`}</h2></div>
+            <div><h2>{loading ? 'Загружаем каталог…' : `${filtered.length} поставщиков`}</h2><p className="results-hint">Выберите 2–3 компании для сравнения.</p></div>
             <label className="inline-search"><span className="sr-only">Поиск по результатам</span><input placeholder="Название, город, услуга" value={query} onChange={(event) => setQuery(event.target.value)} /><span>⌕</span></label>
           </div>
 
           <div className="filter-row" aria-label="Фильтры">
             <button className={deliveryOnly ? 'active' : ''} onClick={() => setDeliveryOnly((value) => !value)}>Доставка в город</button>
-            <button className={minimumFitOnly ? 'active' : ''} onClick={() => setMinimumFitOnly((value) => !value)}>MOQ ≤ {requestedKg} кг</button>
+            <button className={minimumFitOnly ? 'active' : ''} onClick={() => setMinimumFitOnly((value) => !value)}>Мин. заказ до {requestedKg} кг</button>
             <button className={priceOnly ? 'active' : ''} onClick={() => setPriceOnly((value) => !value)}>Цена опубликована</button>
-            <span>Сортировка: полезность ↓</span>
+            <span>Сначала с высокой оценкой</span>
           </div>
 
-          <div className="supplier-head" aria-hidden="true"><span>Поставщик</span><span>Минимум</span><span>Цена</span><span>Доставка</span><span>Матч</span><span /></div>
+          <div className="supplier-head" aria-hidden="true"><span>Поставщик</span><span>Мин. заказ</span><span>Цена</span><span>Доставка</span><span>Оценка</span><span /></div>
           <div className={`supplier-list ${loading ? 'is-loading' : ''}`}>
             {filtered.map((supplier) => (
               <SupplierRow key={supplier.id} supplier={supplier} selected={selectedIds.includes(supplier.id)} onToggle={() => toggleSupplier(supplier.id)} onOpen={() => setDetail(supplier)} />
@@ -344,14 +342,14 @@ export default function App() {
         </section>
 
         <section className="method" id="method">
-          <div className="method-intro"><p className="eyebrow">Доверие по полям</p><h2>Не просто список.<br />След данных.</h2></div>
+          <div className="method-intro"><h2>Откуда данные и как считается оценка</h2></div>
           <div className="method-steps">
-            <div><span>01</span><h3>Собираем</h3><p>Берём условия с официальных страниц поставщиков.</p></div>
-            <div><span>02</span><h3>Не додумываем</h3><p>Если цена, MOQ или сертификаты не указаны — оставляем неизвестными.</p></div>
-            <div><span>03</span><h3>Объясняем</h3><p>Каждый балл раскрывается до критерия, цитаты и ссылки.</p></div>
+            <div><h3>Источники</h3><p>Условия собраны вручную с сайтов поставщиков. Ссылки и выдержки доступны в карточках компаний.</p></div>
+            <div><h3>Что нужно уточнить</h3><p>Если на сайте нет цены, размера заказа или документов, в каталоге указано «по запросу» или «не указано».</p></div>
+            <div><h3>Оценка до 100 баллов</h3><p>Учитывает ассортимент, доставку, размер заказа, источники, дату проверки и наличие цены. Расчёт — в карточке; это не оценка качества кофе.</p></div>
           </div>
           <div className="method-foot">
-            <span>Снимок проверен {meta ? formatDate(meta.verified_at) : '—'}</span>
+            <span>Данные проверены {meta ? formatDate(meta.verified_at) : '—'}</span>
             <span>{meta?.disclaimer}</span>
           </div>
         </section>
