@@ -5,7 +5,18 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-SCORE_VERSION = "coffee-horeca-v2"
+SCORE_VERSION = "horeca-v3"
+
+
+def minimum_matches(supplier: dict[str, Any], category: str, requested_kg: float, requested_period: str) -> bool:
+    minimum = supplier.get("offers", {}).get(category, {}).get("minimum_order", {})
+    kg = minimum.get("kg")
+    return (
+        kg is not None
+        and minimum.get("rub") is None
+        and minimum.get("period") == requested_period
+        and kg <= requested_kg
+    )
 
 
 def _source_reliability(supplier: dict[str, Any]) -> int:
@@ -41,22 +52,24 @@ def _freshness_points(verified_at: str, today: date) -> int:
     return 0
 
 
-def score_supplier(supplier: dict[str, Any], requested_kg: float = 10, today: date | None = None) -> dict[str, Any]:
+def score_supplier(
+    supplier: dict[str, Any], requested_kg: float = 10, today: date | None = None,
+    *, category: str = "coffee-beans", region: str = "Екатеринбург", requested_period: str = "order",
+) -> dict[str, Any]:
     """Return an explainable, deterministic suitability score.
 
     Unknown values never receive the points reserved for a confirmed match.
     """
-    min_kg = supplier.get("minimum_order", {}).get("kg")
-    minimum_fit = min_kg is None or min_kg <= requested_kg
+    offer = supplier.get("offers", {}).get(category, {})
     today = today or date.today()
 
     breakdown = {
-        "product_match": 30 if "Кофе в зернах" in supplier.get("products", []) else 0,
-        "delivery_region": 25 if supplier.get("delivers_to_ekaterinburg") is True else 0,
-        "minimum_fit": 15 if min_kg is not None and minimum_fit else (8 if min_kg is None else 0),
+        "product_match": 30 if offer else 0,
+        "delivery_region": 25 if supplier.get("delivery_regions", {}).get(region) is True else 0,
+        "minimum_fit": 15 if minimum_matches(supplier, category, requested_kg, requested_period) else 0,
         "source_reliability": _source_reliability(supplier),
         "freshness": _freshness_points(supplier.get("verified_at", ""), today),
-        "price_transparency": 5 if supplier.get("price", {}).get("amount") is not None else 0,
+        "price_transparency": 5 if offer.get("price", {}).get("amount") is not None else 0,
     }
     return {
         "total": sum(breakdown.values()),

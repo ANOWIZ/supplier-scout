@@ -1,4 +1,19 @@
 export type Confidence = 'high' | 'medium' | 'low'
+export type Category = 'coffee-beans' | 'tea'
+export type Region = 'Екатеринбург' | 'Москва'
+export type OrderPeriod = 'order' | 'month'
+
+export interface SearchCriteria {
+  category: Category
+  region: Region
+  requestedKg: number
+  period: OrderPeriod
+}
+
+export interface Offer {
+  minimum_order: { kg: number | null; rub: number | null; period: OrderPeriod | 'unknown'; label: string }
+  price: { amount: number | null; currency: string; unit: string; label: string }
+}
 
 export interface Source {
   title: string
@@ -25,10 +40,9 @@ export interface Supplier {
   location: string
   products: string[]
   description: string
-  minimum_order: { kg: number | null; rub: number | null; label: string }
-  price: { amount: number | null; currency: string; unit: string; label: string }
+  offers: Partial<Record<Category, Offer>>
   delivery: string
-  delivers_to_ekaterinburg: boolean | null
+  delivery_regions: Partial<Record<Region, boolean | null>>
   certificates: string
   contacts: { phone: string | null; email: string | null }
   website: string
@@ -40,8 +54,8 @@ export interface Supplier {
 
 export interface SupplierSnapshot {
   meta: {
-    category: string
-    region: string
+    categories: { id: Category; name: string; unit: string }[]
+    regions: Region[]
     verified_at: string
     method: string
     disclaimer: string

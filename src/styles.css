@@ -18,7 +18,8 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 body { margin: 0; min-width: 320px; min-height: 100vh; }
-button, input { font: inherit; }
+button, input, select, textarea { font: inherit; }
+button:disabled { cursor: not-allowed; opacity: .5; }
 button { cursor: pointer; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-underline-offset: 4px; }
@@ -41,11 +42,20 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .intro h1 { font-size: clamp(36px, 4vw, 60px); line-height: 1.15; letter-spacing: -.035em; margin: 0; font-weight: 450; }
 .intro-copy > p:last-child { max-width: 760px; font-size: 18px; line-height: 1.65; margin: 18px 0 0; color: #bbc3ca; }
 .workspace { padding: 40px clamp(20px, 4vw, 64px) 72px; }
-.search-panel { display: grid; grid-template-columns: 1fr 1fr .8fr auto; gap: 0; max-width: 1280px; margin: 32px auto 0; background: #2b2d2e; border: 1px solid #565c61; border-radius: 8px; padding: 16px 0; }
+.search-panel { display: grid; grid-template-columns: 1fr 1fr .8fr 1fr; gap: 0; max-width: 1280px; margin: 32px auto 0; background: #2b2d2e; border: 1px solid #565c61; border-radius: 8px; padding: 16px 0; }
 .field { padding: 0 22px; min-width: 0; border-right: 1px solid #565c61; }
 .field > span:first-child { display: block; font-size: 14px; color: #bac3ca; margin-bottom: 8px; }
-.field input { width: 100%; background: transparent; border: 0; color: white; font-size: 17px; padding: 6px 0; }
-.field input[readonly] { cursor: default; }
+.field input, .field select { width: 100%; background: transparent; border: 0; color: white; font-size: 17px; padding: 6px 0; min-height: 44px; }
+.field select { cursor: pointer; }
+.field option { background: #2b2d2e; color: white; }
+.field:last-child { border-right: 0; }
+.context-note, .catalog-note { color: var(--muted); font-size: 15px; }
+.catalog-note { max-width: 1280px; margin: 0 auto 20px; }
+.minimum-note { display: block; margin-top: 10px; font-size: 14px; color: var(--muted); }
+.supplier-source { display: block; margin-top: 8px; color: var(--accent); }
+.request-fallback { margin-top: 20px; }
+.request-fallback p { font-size: 16px; }
+.request-fallback textarea { width: 100%; min-height: 180px; padding: 12px; font-size: 16px; }
 .number-input { display: flex; align-items: baseline; gap: 8px; }
 .number-input input { width: 85px; border-bottom: 1px solid #747e86; }
 .number-input b { font-size: 16px; font-weight: 400; color: #bbc3ca; }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { loadSuppliers, type DataMode } from './api'
-import { rankSuppliers } from './scoring'
-import type { Supplier, SupplierSnapshot } from './types'
+import { CATEGORY_LABELS, DEFAULT_CRITERIA, minimumExplanation, minimumStatus, offerFor, rankSuppliers } from './scoring'
+import { createRequest } from './request'
+import type { Category, OrderPeriod, Region, SearchCriteria, Supplier, SupplierSnapshot } from './types'
 
 const scoreLabels: Record<string, string> = {
   product_match: 'Категория',
@@ -18,7 +19,7 @@ function ArrowIcon() {
 
 const fieldLabels: Record<string, string> = {
   products: 'Ассортимент', minimum_order: 'Минимальный заказ', price: 'Цена',
-  delivery: 'Доставка', delivers_to_ekaterinburg: 'Доставка в Екатеринбург',
+  delivery: 'Доставка', delivery_regions: 'География доставки',
   contacts: 'Контакты', location: 'Город', certificates: 'Документы',
 }
 const confidenceLabels = { high: 'Указано на сайте', medium: 'Требует уточнения', low: 'Не подтверждено' }
@@ -49,9 +50,10 @@ function useDialogFocus<T extends HTMLElement>(onClose: () => void) {
         onClose()
         return
       }
-      if (event.key !== 'Tab' || focusable.length === 0) return
-      const first = focusable[0]
-      const last = focusable[focusable.length - 1]
+      const currentFocusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+      if (event.key !== 'Tab' || currentFocusable.length === 0) return
+      const first = currentFocusable[0]
+      const last = currentFocusable[currentFocusable.length - 1]
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault()
         last.focus()
@@ -73,16 +75,21 @@ function useDialogFocus<T extends HTMLElement>(onClose: () => void) {
   return dialogRef
 }
 
-function downloadCsv(items: Supplier[]) {
+function downloadCsv(items: Supplier[], criteria: SearchCriteria) {
   const protectSpreadsheetCell = (value: string) => /^[\t\r=+\-@]/.test(value) ? `'${value}` : value
   const rows = [
-    ['Поставщик', 'Город', 'Минимальный заказ', 'Цена', 'Доставка в Екатеринбург', 'Контакт', 'Источник', 'Проверено'],
+    ['Поставщик', 'Город компании', 'Категория', 'Город доставки', 'Объём, кг', 'Период', 'Минимальный заказ', 'Соответствие объёму', 'Цена', 'Доставка подтверждена', 'Контакт', 'Источник', 'Проверено'],
     ...items.map((item) => [
       item.name,
       item.location,
-      item.minimum_order.label,
-      item.price.label,
-      item.delivers_to_ekaterinburg === true ? 'Да' : item.delivers_to_ekaterinburg === false ? 'Нет' : 'Уточнить',
+      CATEGORY_LABELS[criteria.category],
+      criteria.region,
+      criteria.requestedKg,
+      criteria.period === 'order' ? 'за заказ' : 'в месяц',
+      offerFor(item, criteria.category).minimum_order.label,
+      minimumExplanation(item, criteria),
+      offerFor(item, criteria.category).price.label,
+      item.delivery_regions[criteria.region] === true ? 'Да' : item.delivery_regions[criteria.region] === false ? 'Нет' : 'Уточнить',
       item.contacts.email ?? item.contacts.phone ?? 'на сайте',
       item.website,
       item.verified_at,
@@ -96,11 +103,6 @@ function downloadCsv(items: Supplier[]) {
   URL.revokeObjectURL(link.href)
 }
 
-function createRequest(items: Supplier[], requestedKg: number) {
-  const names = items.map((item) => item.name).join(', ')
-  return `Здравствуйте! Ищем поставщика кофе в зернах для кафе в Екатеринбурге, ориентировочный объём — ${requestedKg} кг в месяц. Рассматриваем: ${names}. Просим прислать актуальный прайс, минимальный объём заказа, сроки и стоимость доставки, условия оплаты, образцы и комплект сертификатов. Спасибо!`
-}
-
 function ScoreDial({ value }: { value: number }) {
   return (
     <div className="score-dial" style={{ '--score': `${value * 3.6}deg` } as React.CSSProperties} aria-label={`Оценка ${value} из 100`}>
@@ -111,15 +113,21 @@ function ScoreDial({ value }: { value: number }) {
 
 function SupplierRow({
   supplier,
+  criteria,
   selected,
+  selectionFull,
   onToggle,
   onOpen,
 }: {
   supplier: Supplier
+  criteria: SearchCriteria
   selected: boolean
+  selectionFull: boolean
   onToggle: () => void
   onOpen: () => void
 }) {
+  const offer = offerFor(supplier, criteria.category)
+  const deliveryConfirmed = supplier.delivery_regions[criteria.region] === true
   return (
     <article className={`supplier-row ${selected ? 'is-selected' : ''}`}>
       <button className="row-main" onClick={onOpen} aria-label={`Открыть данные ${supplier.name}`}>
@@ -127,24 +135,25 @@ function SupplierRow({
           <span className="supplier-name">{supplier.name}</span>
           <span className="supplier-location">{supplier.location}</span>
         </span>
-        <span className="data-cell"><small>Мин. заказ</small>{supplier.minimum_order.label}</span>
-        <span className="data-cell"><small>Цена</small>{supplier.price.label}</span>
+        <span className="data-cell"><small>Мин. заказ</small>{offer.minimum_order.label}</span>
+        <span className="data-cell"><small>Цена</small>{offer.price.label}</span>
         <span className="data-cell delivery-cell">
-          <small>Екатеринбург</small>
-          <span className={`delivery-dot ${supplier.delivers_to_ekaterinburg === true ? 'yes' : 'unknown'}`} />
-          {supplier.delivers_to_ekaterinburg === true ? 'доставляет' : 'нужно уточнить'}
+          <small>{criteria.region}</small>
+          <span className={`delivery-dot ${deliveryConfirmed ? 'yes' : 'unknown'}`} />
+          {deliveryConfirmed ? 'доставляет' : 'нужно уточнить'}
         </span>
         <ScoreDial value={supplier.score?.total ?? 0} />
       </button>
-      <button className={`compare-toggle ${selected ? 'active' : ''}`} onClick={onToggle} aria-pressed={selected}>
-        <span>{selected ? '✓' : '+'}</span>{selected ? 'В сравнении' : 'Сравнить'}
+      <button className={`compare-toggle ${selected ? 'active' : ''}`} onClick={onToggle} aria-pressed={selected} disabled={!selected && selectionFull} title={!selected && selectionFull ? 'Можно сравнить до трёх компаний' : undefined}>
+        <span aria-hidden="true">{selected ? '✓' : '+'}</span>{selected ? 'В сравнении' : 'Сравнить'}
       </button>
     </article>
   )
 }
 
-function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: () => void }) {
+function EvidenceDrawer({ supplier, criteria, onClose }: { supplier: Supplier; criteria: SearchCriteria; onClose: () => void }) {
   const dialogRef = useDialogFocus<HTMLElement>(onClose)
+  const offer = offerFor(supplier, criteria.category)
   const sourceFor = (index: number) => supplier.sources[index]
   return (
     <div className="drawer-layer" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -158,13 +167,16 @@ function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: ()
         </div>
 
         <p className="drawer-description">{supplier.description}</p>
+        <p className="context-note">{CATEGORY_LABELS[criteria.category]} · {criteria.region} · {criteria.requestedKg} кг {criteria.period === 'order' ? 'за заказ' : 'в месяц'}</p>
 
         <div className="drawer-facts">
-          <div><small>Минимальный заказ</small><strong>{supplier.minimum_order.label}</strong></div>
-          <div><small>Цена</small><strong>{supplier.price.label}</strong></div>
+          <div><small>Минимальный заказ</small><strong>{offer.minimum_order.label}</strong></div>
+          <div><small>Цена</small><strong>{offer.price.label}</strong></div>
           <div><small>Проверено</small><strong>{formatDate(supplier.verified_at)}</strong></div>
           <div><small>Документы</small><strong>{supplier.certificates}</strong></div>
         </div>
+        <p className="method-note">{minimumExplanation(supplier, criteria)}</p>
+        <p className="method-note">Доставка — {criteria.region}: {supplier.delivery_regions[criteria.region] === true ? 'заявлена поставщиком' : 'требует уточнения'}. {supplier.delivery}</p>
 
         <section className="drawer-section">
           <h3>Почему такой балл</h3>
@@ -177,11 +189,12 @@ function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: ()
               </div>
             ))}
           </div>
-          <p className="method-note">Оценка помогает отсортировать варианты, но не заменяет закупочную проверку.</p>
+          <p className="method-note">За неизвестный минимум, сумму в рублях или несовпадающий период баллы соответствия объёму не начисляются. Оценка не заменяет закупочную проверку.</p>
         </section>
 
         <section className="drawer-section">
-          <h3>Что указано на сайте</h3>
+          <h3>Источники и условия компании</h3>
+          <p className="method-note">Ниже есть сведения о разных категориях. Для выбранной категории действуют условия в блоке выше.</p>
           <div className="evidence-list">
             {supplier.evidence.map((item, index) => {
               const source = sourceFor(item.source_index)
@@ -206,13 +219,19 @@ function EvidenceDrawer({ supplier, onClose }: { supplier: Supplier; onClose: ()
   )
 }
 
-function ComparePanel({ items, requestedKg, onClose, onRemove }: { items: Supplier[]; requestedKg: number; onClose: () => void; onRemove: (id: string) => void }) {
+function ComparePanel({ items, criteria, onClose, onRemove }: { items: Supplier[]; criteria: SearchCriteria; onClose: () => void; onRemove: (id: string) => void }) {
   const dialogRef = useDialogFocus<HTMLElement>(onClose)
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
   const copyRequest = async () => {
-    await navigator.clipboard.writeText(createRequest(items, requestedKg))
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1800)
+    try {
+      await navigator.clipboard.writeText(createRequest(criteria))
+      setCopied(true)
+      setCopyError(false)
+    } catch {
+      setCopyError(true)
+      setCopied(false)
+    }
   }
 
   return (
@@ -222,6 +241,7 @@ function ComparePanel({ items, requestedKg, onClose, onRemove }: { items: Suppli
           <div><p className="eyebrow">Короткий список</p><h2 id="compare-title">Сравнение {items.length} поставщиков</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="Закрыть">×</button>
         </div>
+        <p className="context-note">{CATEGORY_LABELS[criteria.category]} · {criteria.region} · {criteria.requestedKg} кг {criteria.period === 'order' ? 'за заказ' : 'в месяц'}. Цены «от» — ориентиры, не предложения на одинаковый товар.</p>
         <div className="compare-grid" style={{ gridTemplateColumns: `140px repeat(${items.length}, minmax(240px, 1fr))` }}>
           <div className="compare-labels" aria-hidden="true">
             <span /><span>Оценка</span><span>Мин. заказ</span><span>Цена</span><span>Доставка</span><span>Контакт</span>
@@ -230,17 +250,19 @@ function ComparePanel({ items, requestedKg, onClose, onRemove }: { items: Suppli
             <div className="compare-column" key={item.id}>
               <div className="compare-name"><h3>{item.name}</h3><button onClick={() => onRemove(item.id)} aria-label={`Убрать ${item.name}`}>×</button></div>
               <strong className="compare-score">{item.score?.total}<small>/100</small></strong>
-              <span>{item.minimum_order.label}</span>
-              <span>{item.price.label}</span>
-              <span>{item.delivery}</span>
-              <span>{item.contacts.email ?? item.contacts.phone ?? 'на сайте'}</span>
+              <span>{offerFor(item, criteria.category).minimum_order.label}<small className="minimum-note">{minimumExplanation(item, criteria)}</small></span>
+              <span>{offerFor(item, criteria.category).price.label}</span>
+              <span>{criteria.region}: {item.delivery_regions[criteria.region] === true ? 'доставка заявлена' : 'уточнить доставку'}. {item.delivery}</span>
+              <span>{item.contacts.email ?? item.contacts.phone ?? 'на сайте'}<a className="supplier-source" href={item.website} target="_blank" rel="noreferrer">Сайт поставщика</a></span>
             </div>
           ))}
         </div>
         <div className="compare-actions">
-          <button className="primary-button" onClick={copyRequest}>{copied ? 'Запрос скопирован' : 'Скопировать запрос поставщикам'}</button>
-          <button className="secondary-button" onClick={() => downloadCsv(items)}>Экспорт CSV</button>
+          <button className="primary-button" onClick={copyRequest}>{copied ? 'Запрос скопирован' : 'Скопировать запрос поставщику'}</button>
+          <button className="secondary-button" onClick={() => downloadCsv(items, criteria)}>Экспорт CSV</button>
         </div>
+        <p className="sr-only" role="status">{copied ? 'Запрос скопирован в буфер обмена' : ''}</p>
+        {copyError && <div className="request-fallback"><p role="alert">Не удалось скопировать автоматически. Выделите текст и скопируйте вручную.</p><textarea aria-label="Текст запроса поставщику" readOnly value={createRequest(criteria)} onFocus={(event) => event.target.select()} /></div>}
       </section>
     </div>
   )
@@ -252,43 +274,64 @@ export default function App() {
   const [mode, setMode] = useState<DataMode>('snapshot')
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [requestedKg, setRequestedKg] = useState(10)
+  const [criteria, setCriteria] = useState<SearchCriteria>(DEFAULT_CRITERIA)
+  const { requestedKg } = criteria
   const [deliveryOnly, setDeliveryOnly] = useState(false)
   const [priceOnly, setPriceOnly] = useState(false)
   const [minimumFitOnly, setMinimumFitOnly] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [detail, setDetail] = useState<Supplier | null>(null)
+  const [detailId, setDetailId] = useState<string | null>(null)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+  const [retry, setRetry] = useState(0)
+
+  const changeCriteria = (patch: Partial<SearchCriteria>) => {
+    setCriteria((current) => ({ ...current, ...patch }))
+    if (patch.category || patch.region) {
+      setSelectedIds([])
+      setDetailId(null)
+      setCompareOpen(false)
+    }
+  }
 
   useEffect(() => {
     let active = true
     setLoading(true)
-    loadSuppliers(requestedKg)
+    setLoadError(false)
+    loadSuppliers()
       .then((result) => {
         if (!active) return
         setSuppliers(result.suppliers)
         setMeta(result.meta)
         setMode(result.mode)
       })
+      .catch(() => {
+        if (!active) return
+        setSuppliers([])
+        setMeta(null)
+        setLoadError(true)
+      })
       .finally(() => active && setLoading(false))
     return () => { active = false }
-  }, [requestedKg])
+  }, [retry])
+
+  const ranked = useMemo(() => rankSuppliers(suppliers, criteria), [suppliers, criteria])
+  const detail = ranked.find((supplier) => supplier.id === detailId)
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('ru')
-    return rankSuppliers(suppliers, requestedKg).filter((supplier) => {
+    return ranked.filter((supplier) => {
       const matchesQuery = !normalized || [supplier.name, supplier.location, supplier.description, ...supplier.products].join(' ').toLocaleLowerCase('ru').includes(normalized)
-      const matchesDelivery = !deliveryOnly || supplier.delivers_to_ekaterinburg === true
-      const matchesPrice = !priceOnly || supplier.price.amount !== null
-      const minimumKg = supplier.minimum_order.kg
-      const matchesMinimum = !minimumFitOnly || (minimumKg !== null && minimumKg <= requestedKg)
+      const matchesDelivery = !deliveryOnly || supplier.delivery_regions[criteria.region] === true
+      const matchesPrice = !priceOnly || offerFor(supplier, criteria.category).price.amount !== null
+      const matchesMinimum = !minimumFitOnly || minimumStatus(supplier, criteria) === 'fits'
       return matchesQuery && matchesDelivery && matchesPrice && matchesMinimum
     })
-  }, [suppliers, requestedKg, query, deliveryOnly, priceOnly, minimumFitOnly])
+  }, [ranked, criteria, query, deliveryOnly, priceOnly, minimumFitOnly])
 
   const selected = useMemo(
-    () => selectedIds.map((id) => suppliers.find((supplier) => supplier.id === id)).filter(Boolean) as Supplier[],
-    [selectedIds, suppliers],
+    () => selectedIds.map((id) => ranked.find((supplier) => supplier.id === id)).filter(Boolean) as Supplier[],
+    [selectedIds, ranked],
   )
 
   const toggleSupplier = (id: string) => {
@@ -300,52 +343,54 @@ export default function App() {
       <header className="app-header">
         <a className="brand" href="#top"><span>SS</span> Supplier Scout</a>
         <nav aria-label="Основная навигация"><a href="#suppliers">Каталог</a><a href="#method">О данных</a></nav>
-        <span className={`data-status ${mode}`}><i />{meta ? `Проверено ${formatDate(meta.verified_at)}` : 'Загрузка каталога'}</span>
+        <span className={`data-status ${mode}`}><i />{loadError ? 'Каталог недоступен' : meta ? `Проверено ${formatDate(meta.verified_at)}` : 'Загрузка каталога'}</span>
       </header>
 
       <main id="top">
         <section className="intro">
           <div className="intro-copy">
-            <p className="eyebrow">Кофе для кафе и ресторанов · Екатеринбург</p>
-            <h1>Поставщики кофе</h1>
-            <p>Сравните минимальный заказ, цены и доставку. В карточке каждой компании — контакты и ссылки на условия.</p>
+            <p className="eyebrow">Для кафе и ресторанов · кофе и чай</p>
+            <h1>Выбор поставщика</h1>
+            <p>Выберите категорию и город. Сравните условия и подготовьте запрос поставщику. Демо работает по проверенному каталогу, без поиска в интернете.</p>
           </div>
           <div className="search-panel">
-            <label className="field category-field"><span>Что ищем</span><input value="Кофе в зернах" readOnly /></label>
-            <label className="field region-field"><span>Куда</span><input value="Екатеринбург" readOnly /></label>
-            <label className="field volume-field"><span>Объём в месяц</span><span className="number-input"><input type="number" min="1" max="100000" value={requestedKg} onChange={(event) => setRequestedKg(Math.max(1, Number(event.target.value) || 1))} /><b>кг</b></span></label>
-            <button className="search-button" onClick={() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })}>Показать варианты <ArrowIcon /></button>
+            <label className="field category-field"><span>Что ищем</span><select aria-label="Категория" value={criteria.category} onChange={(event) => changeCriteria({ category: event.target.value as Category })}>{Object.entries(CATEGORY_LABELS).map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></label>
+            <label className="field region-field"><span>Куда</span><select aria-label="Город доставки" value={criteria.region} onChange={(event) => changeCriteria({ region: event.target.value as Region })}>{(meta?.regions ?? ['Екатеринбург', 'Москва']).map((region) => <option key={region}>{region}</option>)}</select></label>
+            <label className="field volume-field"><span>Объём закупки</span><span className="number-input"><input aria-label="Объём закупки, кг" type="number" min="1" max="100000" value={requestedKg} onChange={(event) => changeCriteria({ requestedKg: Math.min(100000, Math.max(1, Number(event.target.value) || 1)) })} /><b>кг</b></span></label>
+            <label className="field period-field"><span>Период</span><select aria-label="Период закупки" value={criteria.period} onChange={(event) => changeCriteria({ period: event.target.value as OrderPeriod })}><option value="order">За один заказ</option><option value="month">В месяц</option></select></label>
           </div>
         </section>
 
         <section className="workspace" id="suppliers">
           <div className="results-heading" id="results">
-            <div><h2>{loading ? 'Загружаем каталог…' : `${filtered.length} поставщиков`}</h2><p className="results-hint">Выберите 2–3 компании для сравнения.</p></div>
+            <div><h2 aria-live="polite">{loading ? 'Загружаем каталог…' : loadError ? 'Не удалось загрузить каталог' : `${filtered.length} поставщиков`}</h2><p className="results-hint">{criteria.region} · {CATEGORY_LABELS[criteria.category]}. Выберите 2–3 компании для сравнения.</p></div>
             <label className="inline-search"><span className="sr-only">Поиск по результатам</span><input placeholder="Название, город, услуга" value={query} onChange={(event) => setQuery(event.target.value)} /><span>⌕</span></label>
           </div>
 
           <div className="filter-row" aria-label="Фильтры">
-            <button className={deliveryOnly ? 'active' : ''} onClick={() => setDeliveryOnly((value) => !value)}>Доставка в город</button>
-            <button className={minimumFitOnly ? 'active' : ''} onClick={() => setMinimumFitOnly((value) => !value)}>Мин. заказ до {requestedKg} кг</button>
-            <button className={priceOnly ? 'active' : ''} onClick={() => setPriceOnly((value) => !value)}>Цена опубликована</button>
+            <button aria-pressed={deliveryOnly} className={deliveryOnly ? 'active' : ''} onClick={() => setDeliveryOnly((value) => !value)}>Доставка подтверждена</button>
+            <button aria-pressed={minimumFitOnly} className={minimumFitOnly ? 'active' : ''} onClick={() => setMinimumFitOnly((value) => !value)}>Подходит объём и период</button>
+            <button aria-pressed={priceOnly} className={priceOnly ? 'active' : ''} onClick={() => setPriceOnly((value) => !value)}>Цена опубликована</button>
             <span>Сначала с высокой оценкой</span>
           </div>
+          <p className="catalog-note">{deliveryOnly ? 'Только компании с опубликованной доставкой в выбранный город.' : 'Включены компании, доставку которых в выбранный город ещё нужно уточнить.'} Минимумы в рублях не пересчитываются в килограммы.</p>
 
           <div className="supplier-head" aria-hidden="true"><span>Поставщик</span><span>Мин. заказ</span><span>Цена</span><span>Доставка</span><span>Оценка</span><span /></div>
           <div className={`supplier-list ${loading ? 'is-loading' : ''}`}>
             {filtered.map((supplier) => (
-              <SupplierRow key={supplier.id} supplier={supplier} selected={selectedIds.includes(supplier.id)} onToggle={() => toggleSupplier(supplier.id)} onOpen={() => setDetail(supplier)} />
+              <SupplierRow key={supplier.id} supplier={supplier} criteria={criteria} selected={selectedIds.includes(supplier.id)} selectionFull={selectedIds.length >= 3} onToggle={() => toggleSupplier(supplier.id)} onOpen={() => setDetailId(supplier.id)} />
             ))}
-            {!loading && filtered.length === 0 && <div className="empty-state"><h3>Под фильтры ничего не попало</h3><p>Снимите часть условий или измените запрос.</p></div>}
+            {loadError && <div className="empty-state" role="alert"><p>Проверьте соединение и попробуйте снова.</p><button className="secondary-button" onClick={() => setRetry((value) => value + 1)}>Повторить загрузку</button></div>}
+            {!loading && !loadError && filtered.length === 0 && <div className="empty-state"><h3>Под фильтры ничего не попало</h3><p>Снимите часть условий или измените запрос. Неизвестные минимумы не проходят фильтр объёма.</p></div>}
           </div>
         </section>
 
         <section className="method" id="method">
           <div className="method-intro"><h2>Откуда данные и как считается оценка</h2></div>
           <div className="method-steps">
-            <div><h3>Источники</h3><p>Условия собраны вручную с сайтов поставщиков. Ссылки и выдержки доступны в карточках компаний.</p></div>
-            <div><h3>Что нужно уточнить</h3><p>Если на сайте нет цены, размера заказа или документов, в каталоге указано «по запросу» или «не указано».</p></div>
-            <div><h3>Оценка до 100 баллов</h3><p>Учитывает ассортимент, доставку, размер заказа, источники, дату проверки и наличие цены. Расчёт — в карточке; это не оценка качества кофе.</p></div>
+            <div><h3>Источники</h3><p>10 компаний, две категории и два города. Данные собраны вручную с официальных сайтов. Дата — проверка публикации, не подтверждение условий менеджером.</p></div>
+            <div><h3>Что нужно уточнить</h3><p>Цены «от» не относятся к одинаковому товару. Документы нужно проверить для выбранной продукции. Неизвестное условие не означает отказ поставщика.</p></div>
+            <div><h3>Оценка до 100 баллов</h3><p>Категория — 30, доставка — 25, подходящий объём и период — 15, источники — до 15, свежесть — до 10, цена — 5. Неизвестный минимум даёт 0. Это не оценка качества продукции.</p></div>
           </div>
           <div className="method-foot">
             <span>Данные проверены {meta ? formatDate(meta.verified_at) : '—'}</span>
@@ -362,10 +407,10 @@ export default function App() {
         </div>
       )}
 
-      {detail && <EvidenceDrawer supplier={detail} onClose={() => setDetail(null)} />}
+      {detail && <EvidenceDrawer supplier={detail} criteria={criteria} onClose={() => setDetailId(null)} />}
       {compareOpen && <ComparePanel
-        items={rankSuppliers(selected, requestedKg)}
-        requestedKg={requestedKg}
+        items={selected}
+        criteria={criteria}
         onClose={() => setCompareOpen(false)}
         onRemove={(id) => {
           const remaining = selectedIds.filter((item) => item !== id)

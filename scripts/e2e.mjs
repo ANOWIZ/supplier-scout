@@ -55,6 +55,28 @@ try {
   assert.ok(await supplierPage.locator('.supplier-row').count() < 10)
   assert.ok(await supplierPage.locator('.supplier-row').count() > 0)
   await supplierPage.getByRole('button', { name: 'Цена опубликована', exact: true }).click()
+
+  // Category-specific conditions and real delivery differences across regions.
+  await supplierPage.getByRole('combobox', { name: 'Категория', exact: true }).selectOption('tea')
+  assert.equal(await supplierPage.locator('.supplier-row').count(), 4)
+  assert.ok(!(await supplierPage.locator('.supplier-list').textContent()).includes('1 235'))
+  await supplierPage.getByRole('button', { name: 'Доставка подтверждена', exact: true }).click()
+  assert.equal(await supplierPage.locator('.supplier-row').count(), 3)
+  await supplierPage.getByRole('combobox', { name: 'Город доставки', exact: true }).selectOption('Москва')
+  assert.equal(await supplierPage.locator('.supplier-row').count(), 4)
+  await supplierPage.getByRole('button', { name: 'Доставка подтверждена', exact: true }).click()
+
+  // Selection is reset when its category/region changes.
+  await supplierPage.getByRole('button', { name: 'Сравнить', exact: true }).first().click()
+  await supplierPage.getByRole('combobox', { name: 'Категория', exact: true }).selectOption('coffee-beans')
+  assert.equal(await supplierPage.locator('.selection-bar').count(), 0)
+  await supplierPage.getByRole('combobox', { name: 'Город доставки', exact: true }).selectOption('Екатеринбург')
+  await supplierPage.getByRole('button', { name: 'Подходит объём и период', exact: true }).click()
+  assert.equal(await supplierPage.locator('.supplier-row').count(), 5)
+  await supplierPage.getByRole('combobox', { name: 'Период закупки', exact: true }).selectOption('month')
+  await supplierPage.getByRole('heading', { name: 'Под фильтры ничего не попало' }).waitFor()
+  await supplierPage.getByRole('combobox', { name: 'Период закупки', exact: true }).selectOption('order')
+  await supplierPage.getByRole('button', { name: 'Подходит объём и период', exact: true }).click()
   await supplierPage.evaluate(() => document.fonts.ready)
   await supplierPage.screenshot({ path: '.qa-supplier-desktop.png', fullPage: true, animations: 'disabled' })
 
@@ -64,6 +86,18 @@ try {
   await supplierPage.locator('.selection-bar').getByRole('button', { name: /Сравнить 2/ }).click()
   await supplierPage.getByRole('dialog', { name: /Сравнение 2 поставщиков/ }).waitFor()
   assert.equal(await supplierPage.locator('.compare-column').count(), 2)
+  await supplierPage.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Permission denied') } } }))
+  await supplierPage.getByRole('button', { name: 'Скопировать запрос поставщику', exact: true }).click()
+  const manualRequest = await supplierPage.getByRole('textbox', { name: 'Текст запроса поставщику', exact: true }).inputValue()
+  assert.ok(manualRequest.includes('Кофе в зернах') && manualRequest.includes('Екатеринбург') && manualRequest.includes('на один заказ'))
+  assert.ok(!manualRequest.includes('Рассматриваем'))
+  const downloadPromise = supplierPage.waitForEvent('download')
+  await supplierPage.getByRole('button', { name: 'Экспорт CSV', exact: true }).click()
+  const download = await downloadPromise
+  const chunks = []
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk)
+  const csv = Buffer.concat(chunks).toString('utf8')
+  assert.ok(csv.includes('Кофе в зернах') && csv.includes('Екатеринбург') && csv.includes('за заказ'))
   await supplierPage.screenshot({ path: '.qa-compare-desktop.png', animations: 'disabled' })
   await supplierPage.locator('.compare-name button').first().click()
   await supplierPage.locator('.compare-panel').waitFor({ state: 'hidden' })
@@ -75,6 +109,26 @@ try {
   await supplierPage.keyboard.press('Escape')
   await supplierPage.locator('.evidence-drawer').waitFor({ state: 'hidden' })
 
+  // Three-item limit is explicit, and removing an item restores the controls.
+  await supplierPage.reload({ waitUntil: 'networkidle' })
+  for (let count = 0; count < 3; count += 1) await supplierPage.getByRole('button', { name: 'Сравнить', exact: true }).first().click()
+  assert.equal(await supplierPage.locator('.compare-toggle:disabled').count(), 7)
+  await supplierPage.getByRole('button', { name: 'В сравнении', exact: true }).first().click()
+  assert.equal(await supplierPage.locator('.compare-toggle:disabled').count(), 0)
+
+  const failurePage = await desktop.newPage()
+  const failureErrors = []
+  failurePage.on('pageerror', error => failureErrors.push(error.message))
+  await failurePage.route('**/suppliers.json', route => route.fulfill({ status: 503, body: 'unavailable' }))
+  await failurePage.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' })
+  await failurePage.getByRole('heading', { name: 'Не удалось загрузить каталог', exact: true }).waitFor()
+  assert.equal(await failurePage.getByRole('heading', { name: 'Под фильтры ничего не попало' }).count(), 0)
+  await failurePage.unroute('**/suppliers.json')
+  await failurePage.getByRole('button', { name: 'Повторить загрузку', exact: true }).click()
+  await failurePage.getByRole('heading', { name: '10 поставщиков', exact: true }).waitFor()
+  assert.deepEqual(failureErrors, [])
+  await failurePage.close()
+
   const portfolioPage = await desktop.newPage()
   await portfolioPage.goto('http://127.0.0.1:4174/', { waitUntil: 'domcontentloaded' })
   await portfolioPage.getByRole('heading', { level: 1, name: /Михаил/ }).waitFor()
@@ -84,6 +138,11 @@ try {
   assert.equal(await hotelProject.getByRole('link', { name: 'Открыть сайт' }).getAttribute('href'), 'https://виарти.рф/')
   assert.equal(await hotelProject.locator('a').count(), 1)
   assert.ok((await hotelProject.textContent()).includes('Права на исходники принадлежат владельцу мини-отеля.'))
+  for (const title of ['Sensoria', 'Контур', 'Веха']) {
+    const project = portfolioPage.locator('.project').filter({ has: portfolioPage.getByRole('heading', { name: title, exact: true }) })
+    assert.ok((await project.textContent()).includes('Мой вклад.'))
+    assert.ok((await project.textContent()).includes('vibe-coding'))
+  }
   for (const repository of ['sensoria', 'contour-reports', 'stream-quiz', 'VEHA']) {
     assert.equal(await portfolioPage.locator(`.project-links a[href="https://github.com/ANOWIZ/${repository}"]`).count(), 1)
   }
@@ -144,7 +203,7 @@ try {
     }
     await context.close()
   }
-  console.log('E2E passed: filters, compare, evidence drawer, links, mobile menu; Cyrillic font, 18px body, no text below 14px and no overflow at five viewport widths.')
+  console.log('E2E passed: category/region/period filters, category offers, compare/selection limit, CSV, clipboard fallback, load error/retry, evidence, contribution copy, links/menu, Cyrillic font, 18px body, no text below 14px and no overflow at five viewport widths.')
 } finally {
   await browser.close()
   for (const server of previewServers) server.kill()
