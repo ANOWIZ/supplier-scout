@@ -1,0 +1,27 @@
+{
+  "name": "supplier-scout",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "sync:data": "node scripts/sync-data.mjs",
+    "dev": "npm run sync:data && vite",
+    "build": "npm run sync:data && tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "node scripts/e2e.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "playwright-core": "^1.63.0",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}

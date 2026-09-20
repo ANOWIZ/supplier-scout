@@ -1,0 +1,9 @@
+[project]
+name = "supplier-scout-api"
+version = "1.0.0"
+description = "Read-only evidence-backed supplier comparison API"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

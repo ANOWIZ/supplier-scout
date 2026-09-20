@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.vite/
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+*.db
+*.sqlite3
+.venv/
+.qa-*.png

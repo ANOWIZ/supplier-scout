@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "category": "Кофе в зернах для HoReCa",
+    "region": "Екатеринбург",
+    "verified_at": "2026-09-20",
+    "method": "Ручная проверка официальных страниц поставщиков. Неизвестные значения сохранены как null, а не интерпретированы как отсутствие условия.",
+    "disclaimer": "Условия поставки меняются. Перед закупкой запросите актуальное коммерческое предложение и документы."
+  },
+  "suppliers": [
+    {
+      "id": "snabcoffee",
+      "name": "SnabCoffee",
+      "location": "Екатеринбург",
+      "products": ["Кофе в зернах", "Кофе молотый"],
+      "description": "Локальная кофейная компания: свежая обжарка, оптовые и розничные поставки для кофеен, офисов, баров и ресторанов.",
+      "minimum_order": {"kg": 5, "rub": null, "label": "от 5 кг для ИП и организаций"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "по запросу"},
+      "delivery": "Самовывоз или доставка курьером; география и стоимость уточняются.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": "+7 922 290-31-83", "email": null},
+      "website": "https://snabcoffee.ru/coffee",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Продажа кофе — SnabCoffee", "url": "https://snabcoffee.ru/coffee", "type": "official"}],
+      "evidence": [
+        {"fields": ["products", "minimum_order"], "quote": "Оптовые цены действительны при покупке от 5 кг для ИП и организаций.", "confidence": "high", "source_index": 0},
+        {"fields": ["contacts", "location"], "quote": "Оптовая и розничная продажа кофе в Екатеринбурге; телефон опубликован на странице.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "berucoffee",
+      "name": "BeruCoffee",
+      "location": "Москва / склад в Екатеринбурге",
+      "products": ["Кофе в зернах", "СТМ"],
+      "description": "Оптовая обжарка для кофеен, ресторанов, отелей и офисов; можно смешивать сорта и заказать индивидуальную упаковку.",
+      "minimum_order": {"kg": 10, "rub": null, "label": "от 10 кг"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "коммерческое предложение"},
+      "delivery": "Логистика по Москве и России; на сайте указан склад в Екатеринбурге.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": "+7 925 774-67-07", "email": "info@berucoffee.ru"},
+      "website": "https://berucoffee.ru/site/wholesale",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Кофе оптом — BeruCoffee", "url": "https://berucoffee.ru/site/wholesale", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order", "products"], "quote": "Минимальный заказ — от 10 кг кофе в зернах; возможно смешивание сортов.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery", "location"], "quote": "Указана логистика по России и склад: Екатеринбург, Луначарского, 130.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "bacca",
+      "name": "BACCA",
+      "location": "Москва",
+      "products": ["Кофе в зернах", "Декаф", "Кастомный купаж", "СТМ"],
+      "description": "Specialty-зерно с обжаркой под отгрузку, подбором профиля и поддержкой шеф-бариста для HoReCa.",
+      "minimum_order": {"kg": 0, "rub": null, "label": "без минимального объёма"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "рассчитывается по параметрам заказа"},
+      "delivery": "Москва — самовывоз/доставка; Россия — транспортные компании; ЕАЭС — экспорт.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Отбор specialty-зерна по SCA; документы на странице не перечислены",
+      "contacts": {"phone": "+7 967 153-77-83", "email": "sales@baccarossa.shop"},
+      "website": "https://baccarossa.shop/horeca/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "BACCA HoReCa", "url": "https://baccarossa.shop/horeca/", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order", "price"], "quote": "Минимального заказа нет; цена рассчитывается по параметрам заказа.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery"], "quote": "РФ — доставка транспортными компаниями; срок отгрузки после подбора профиля 3–5 рабочих дней.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "magdomir",
+      "name": "Магия вкуса",
+      "location": "Москва",
+      "products": ["Кофе в зернах", "Чай", "HoReCa ассортимент"],
+      "description": "Оптовый каталог чая и кофе для ресторанов, кафе, баров и гостиниц; более 1400 позиций на HoReCa-странице.",
+      "minimum_order": {"kg": null, "rub": 5000, "label": "от 5 000 ₽"},
+      "price": {"amount": null, "currency": "RUB", "unit": "заказ", "label": "оптовый прайс по запросу"},
+      "delivery": "Доставка до выбранной транспортной компании; бесплатные образцы по России.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": "+7 800 350-06-78", "email": "info@magdomir.ru"},
+      "website": "https://magdomir.ru/horeca/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "HoReCa — Магия вкуса", "url": "https://magdomir.ru/horeca/", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order"], "quote": "Минимальный заказ — 5 000 рублей.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery"], "quote": "Организуем доставку до удобной транспортной компании; бесплатные образцы по России.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "gfc-russia",
+      "name": "GFC Russia",
+      "location": "Федеральная сеть",
+      "products": ["Кофе в зернах", "Бакалея", "HoReCa ассортимент"],
+      "description": "Федеральный поставщик продуктов для HoReCa с отдельным каталогом кофе и товарными позициями.",
+      "minimum_order": {"kg": null, "rub": null, "label": "не указано"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "зависит от позиции и региона"},
+      "delivery": "Поставка для HoReCa; условия для Екатеринбурга требуют подтверждения менеджером.",
+      "delivers_to_ekaterinburg": null,
+      "certificates": "Запросить на выбранную позицию",
+      "contacts": {"phone": null, "email": null},
+      "website": "https://gfc-russia.ru/catalog/bakaleya/chaj-kofe-napitki/criterii-kofe",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Каталог кофе — GFC Russia", "url": "https://gfc-russia.ru/catalog/bakaleya/chaj-kofe-napitki/criterii-kofe", "type": "official"}],
+      "evidence": [
+        {"fields": ["products", "price"], "quote": "Официальный каталог содержит товарные позиции кофе; условия зависят от выбранной позиции и филиала.", "confidence": "medium", "source_index": 0}
+      ]
+    },
+    {
+      "id": "tasty-coffee",
+      "name": "Tasty Coffee",
+      "location": "Ижевск / Россия",
+      "products": ["Кофе в зернах", "Кофе под СТМ"],
+      "description": "Обжарщик с оптовым кабинетом, производством заказа после подтверждения и поставками для кофеен, ресторанов и компаний.",
+      "minimum_order": {"kg": 0, "rub": null, "label": "без ограничений для профильного бизнеса"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "оптовый прайс после регистрации"},
+      "delivery": "Передача в транспортную компанию в день обжарки; в 80% случаев доставка занимает 3–5 дней.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": null, "email": null},
+      "website": "https://tastycoffee.ru/kofe-dlya-biznesa",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Кофе для бизнеса — Tasty Coffee", "url": "https://tastycoffee.ru/kofe-dlya-biznesa", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order"], "quote": "Для компаний, связанных с кофе, ограничений по размеру заказа нет; 25 кг — для офиса или личных закупок.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery"], "quote": "Заказ отправляют на следующий рабочий день; в 80% случаев доставка занимает 3–5 дней.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "august-coffee",
+      "name": "August Coffee",
+      "location": "Санкт-Петербург",
+      "products": ["Кофе в зернах", "Дрип-кофе", "Чай"],
+      "description": "Собственная обжарка и оптовые цены для компаний и ИП прямо в основном каталоге; скидки зависят от общего веса кофе.",
+      "minimum_order": {"kg": null, "rub": 10000, "label": "10 000 ₽; 7 000 ₽ для дрипов и фильтра"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "видна после регистрации компании"},
+      "delivery": "Курьер, СДЭК до ПВЗ/постамата или самовывоз.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Раздел документов доступен на сайте; состав комплекта уточнить",
+      "contacts": {"phone": "+7 999 006-11-03", "email": "info@augustcoffee.ru"},
+      "website": "https://augustcoffee.ru/opt/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Оптовым покупателям — August Coffee", "url": "https://augustcoffee.ru/opt/", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order"], "quote": "Обычный минимум — 10 000 ₽; для дрип-кофе и фильтра — 7 000 ₽.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery"], "quote": "Доставка курьером, СДЭК до пункта выдачи или постамата, самовывоз.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "frumentum",
+      "name": "Frumentum",
+      "location": "Россия",
+      "products": ["Кофе в зернах", "Образцы"],
+      "description": "Свежеобжаренный кофе для кофеен, кафе, ресторанов, магазинов и офисов; бесплатные образцы и оптовый прайс.",
+      "minimum_order": {"kg": 15, "rub": null, "label": "от 15 кг в месяц"},
+      "price": {"amount": 1235, "currency": "RUB", "unit": "кг", "label": "от 1 235 ₽/кг"},
+      "delivery": "Отправка на следующий день после заказа; географию и тариф подтвердить.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": null, "email": null},
+      "website": "https://coffee.frumentum.ru/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Кофе оптом — Frumentum", "url": "https://coffee.frumentum.ru/", "type": "official"}],
+      "evidence": [
+        {"fields": ["minimum_order", "price"], "quote": "Заголовок страницы: от 1 235 ₽/кг и от 15 кг в месяц.", "confidence": "high", "source_index": 0},
+        {"fields": ["delivery"], "quote": "На странице заявлена отправка на следующий день после заказа.", "confidence": "medium", "source_index": 0}
+      ]
+    },
+    {
+      "id": "ingresso",
+      "name": "Ingresso Coffee",
+      "location": "Екатеринбург",
+      "products": ["Кофе в зернах", "Чай", "Обучение"],
+      "description": "Екатеринбургский обжарщик и оптовый поставщик; динамическая система скидок от объёма и обучение.",
+      "minimum_order": {"kg": null, "rub": null, "label": "по запросу"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "по запросу"},
+      "delivery": "Локальный поставщик в Екатеринбурге; конкретные условия согласуются с отделом продаж.",
+      "delivers_to_ekaterinburg": true,
+      "certificates": "На сайте опубликован отдельный раздел сертификатов",
+      "contacts": {"phone": "+7 965 525-45-51", "email": "rop@ingresso.coffee"},
+      "website": "https://ingresso.coffee/optovym-klientam/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Оптовым клиентам — Ingresso Coffee", "url": "https://ingresso.coffee/optovym-klientam/", "type": "official"}],
+      "evidence": [
+        {"fields": ["location", "contacts"], "quote": "Отдел продаж и адрес опубликованы: Екатеринбург, ул. Городская, 20.", "confidence": "high", "source_index": 0},
+        {"fields": ["price"], "quote": "На странице заявлена динамическая система скидок от объёма без публикации базовой цены.", "confidence": "high", "source_index": 0}
+      ]
+    },
+    {
+      "id": "camera-obscura",
+      "name": "Camera Obscura",
+      "location": "Москва / Россия",
+      "products": ["Кофе в зернах", "Обучение", "Оборудование"],
+      "description": "B2B-направление обжарщика: поставка кофе для кофеен и бизнеса с поддержкой запуска и настройкой продукта.",
+      "minimum_order": {"kg": null, "rub": null, "label": "не указано"},
+      "price": {"amount": null, "currency": "RUB", "unit": "кг", "label": "по запросу"},
+      "delivery": "Логистические условия запрашиваются у менеджера.",
+      "delivers_to_ekaterinburg": null,
+      "certificates": "Не указаны на странице",
+      "contacts": {"phone": null, "email": null},
+      "website": "https://b2b.camcoffee.ru/",
+      "verified_at": "2026-09-20",
+      "sources": [{"title": "Кофе для бизнеса — Camera Obscura", "url": "https://b2b.camcoffee.ru/", "type": "official"}],
+      "evidence": [
+        {"fields": ["products", "description"], "quote": "Официальная B2B-страница поставщика кофе для бизнеса.", "confidence": "medium", "source_index": 0},
+        {"fields": ["minimum_order", "delivery"], "quote": "Публичные MOQ и логистические условия на странице не обнаружены — требуется запрос.", "confidence": "medium", "source_index": 0}
+      ]
+    }
+  ]
+}
