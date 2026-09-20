@@ -138,11 +138,10 @@ try {
   assert.equal(await hotelProject.getByRole('link', { name: 'Открыть сайт' }).getAttribute('href'), 'https://виарти.рф/')
   assert.equal(await hotelProject.locator('a').count(), 1)
   assert.ok((await hotelProject.textContent()).includes('Права на исходники принадлежат владельцу мини-отеля.'))
-  for (const title of ['Sensoria', 'Контур', 'Веха']) {
-    const project = portfolioPage.locator('.project').filter({ has: portfolioPage.getByRole('heading', { name: title, exact: true }) })
-    assert.ok((await project.textContent()).includes('Мой вклад.'))
-    assert.ok((await project.textContent()).includes('vibe-coding'))
-  }
+  assert.equal(await portfolioPage.locator('.projects-intro').count(), 1)
+  assert.ok((await portfolioPage.locator('.projects-intro').textContent()).includes('Во всех проектах отвечал за полный цикл'))
+  assert.ok((await portfolioPage.locator('.projects-intro').textContent()).includes('vibe-coding'))
+  assert.equal(await portfolioPage.locator('.project').getByText(/Мой вклад|vibe-coding/).count(), 0)
   for (const repository of ['sensoria', 'contour-reports', 'stream-quiz', 'VEHA']) {
     assert.equal(await portfolioPage.locator(`.project-links a[href="https://github.com/ANOWIZ/${repository}"]`).count(), 1)
   }
