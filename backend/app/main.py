@@ -23,7 +23,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="Supplier Scout API",
+    title="Поиск поставщиков — API",
     version="2.0.0",
     description="Read-only API for a sourced supplier snapshot.",
     lifespan=lifespan,

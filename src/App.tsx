@@ -98,7 +98,7 @@ function downloadCsv(items: Supplier[], criteria: SearchCriteria) {
   const csv = rows.map((row) => row.map((cell) => `"${protectSpreadsheetCell(String(cell)).replaceAll('"', '""')}"`).join(';')).join('\n')
   const link = document.createElement('a')
   link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
-  link.download = 'supplier-scout-shortlist.csv'
+  link.download = 'poisk-postavshchikov-spisok.csv'
   link.click()
   URL.revokeObjectURL(link.href)
 }
@@ -341,7 +341,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <a className="brand" href="#top"><span>SS</span> Supplier Scout</a>
+        <a className="brand" href="#top"><span>ПП</span> Поиск поставщиков</a>
         <nav aria-label="Основная навигация"><a href="#suppliers">Каталог</a><a href="#method">О данных</a></nav>
         <span className={`data-status ${mode}`}><i />{loadError ? 'Каталог недоступен' : meta ? `Проверено ${formatDate(meta.verified_at)}` : 'Загрузка каталога'}</span>
       </header>
